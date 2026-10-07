@@ -1,0 +1,6 @@
+build/
+qa/screenshots/
+node_modules/
+*.log
+.DS_Store
+deploy.env

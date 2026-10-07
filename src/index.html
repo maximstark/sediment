@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEDIMENT — a small world that remembers</title>
+<meta name="description" content="A small persistent world of sand, water, fire, and gold that remembers what you build.">
+<meta name="author" content="Maxim Starkweather">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="TemperatureZero">
+<meta property="og:title" content="SEDIMENT — a small world that remembers">
+<meta property="og:description" content="A small persistent world of sand, water, fire, and gold that remembers what you build.">
+<meta property="og:url" content="https://demo.temperaturezero.com/sediment/">
+<meta property="og:image" content="https://demo.temperaturezero.com/sediment/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SEDIMENT — a small world that remembers">
+<meta name="twitter:description" content="A small persistent world of sand, water, fire, and gold that remembers what you build.">
+<meta name="twitter:image" content="https://demo.temperaturezero.com/sediment/og.png">
+<meta name="theme-color" content="#ddd0b2">
+<link rel="canonical" href="https://demo.temperaturezero.com/sediment/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23e9dfc6'/%3E%3Cpath d='M16 2.5 27.5 16 16 29.5 4.5 16Z' fill='%23b8941f'/%3E%3Cpath d='M16 9.5 22 16l-6 6.5L10 16Z' fill='%23e9dfc6'/%3E%3C/svg%3E">
+<style>
+  /* IM Fell English, self-hosted — matches how temperaturezero.com serves Space Grotesk */
+  @font-face{
+    font-family:'IM Fell English';
+    font-style:normal;font-weight:400;font-display:swap;
+    src:url(fonts/IMFellEnglish-Regular.woff2) format('woff2');
+    unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+  }
+  @font-face{
+    font-family:'IM Fell English';
+    font-style:italic;font-weight:400;font-display:swap;
+    src:url(fonts/IMFellEnglish-Italic.woff2) format('woff2');
+    unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+  }
+  :root{
+    --vellum:#e9dfc6;
+    --vellum-deep:#ddd0b2;
+    --ink:#221b12;
+    --ink-faded:#5a4f3d;
+    --gold:#b8941f;
+    --rule:#3a3226;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{height:100%}
+  body{
+    min-height:100%;
+    background:var(--vellum-deep);
+    color:var(--ink);
+    font-family:'IM Fell English', Georgia, 'Times New Roman', serif;
+    display:flex;align-items:center;justify-content:center;
+    padding:14px;
+  }
+  .folio{
+    background:var(--vellum);
+    border:1px solid var(--rule);
+    outline:3px double var(--rule);
+    outline-offset:4px;
+    padding:18px 20px 16px;
+    max-width:980px;width:100%;
+    box-shadow:0 2px 14px rgba(34,27,18,.25);
+    /* margin:auto (not align-items alone) so a tall folio overflows downward
+       and stays scrollable instead of being clipped at the top on phones */
+    margin:auto;
+  }
+  header{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid var(--rule);padding-bottom:8px;margin-bottom:12px}
+  h1{font-size:30px;letter-spacing:.35em;font-weight:normal}
+  h1 .g{color:var(--gold)}
+  .motto{font-style:italic;color:var(--ink-faded);font-size:14px}
+  .body{display:flex;gap:16px}
+  .stage{flex:0 0 auto}
+  canvas{
+    display:block;
+    border:1px solid var(--rule);
+    image-rendering:pixelated;
+    cursor:crosshair;
+    touch-action:none;
+    max-width:100%;
+  }
+  .status{font-size:13px;color:var(--ink-faded);margin-top:6px;font-style:italic;min-height:18px}
+  .chronicle{
+    flex:1 1 auto;min-width:200px;max-width:280px;
+    border-left:1px solid var(--rule);
+    padding-left:14px;
+    display:flex;flex-direction:column;
+  }
+  .chronicle h2{
+    font-size:13px;letter-spacing:.3em;font-weight:normal;
+    border-bottom:1px solid var(--rule);padding-bottom:5px;margin-bottom:8px;
+  }
+  #chron{
+    overflow-y:auto;max-height:400px;
+    font-size:13.5px;line-height:1.5;
+  }
+  #chron p{margin-bottom:9px}
+  #chron .d{font-variant:small-caps;letter-spacing:.05em}
+  #chron .m{font-style:italic;color:var(--ink-faded)}
+  #chron p:first-child .m{color:var(--ink)}
+  .bench{
+    margin-top:12px;border-top:2px solid var(--rule);padding-top:10px;
+    display:flex;flex-wrap:wrap;gap:6px;align-items:center;
+  }
+  button{
+    font-family:inherit;font-size:13px;letter-spacing:.08em;
+    background:transparent;color:var(--ink);
+    border:1px solid var(--rule);
+    padding:5px 11px;cursor:pointer;
+  }
+  button:hover{background:rgba(34,27,18,.07)}
+  button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  button.sel{background:var(--ink);color:var(--vellum)}
+  button.sel.goldbtn{background:var(--gold);color:var(--ink);border-color:var(--gold)}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  .spacer{flex:1}
+  .grains{font-size:13px;color:var(--gold);font-style:italic;white-space:nowrap}
+  .small{font-size:12px;color:var(--ink-faded)}
+  label{font-size:12px;color:var(--ink-faded);letter-spacing:.05em}
+  input[type=range]{width:70px;accent-color:var(--ink);vertical-align:middle}
+  .vaultnote{font-size:12px;color:#8a3b22;font-style:italic;margin-top:4px;display:none}
+  .colophon{
+    margin-top:12px;border-top:1px solid var(--rule);padding-top:8px;
+    font-size:12px;line-height:1.5;color:var(--ink-faded);
+    font-style:italic;letter-spacing:.04em;
+  }
+  .colophon a{
+    color:var(--ink-faded);text-decoration:none;
+    border-bottom:1px solid rgba(90,79,61,.45);
+  }
+  .colophon a:hover{color:var(--ink);border-bottom-color:var(--ink)}
+  .colophon a:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  @media (max-width:820px){
+    .body{flex-direction:column}
+    .chronicle{border-left:none;border-top:1px solid var(--rule);padding-left:0;padding-top:10px;max-width:none}
+    #chron{max-height:180px}
+  }
+  @media (max-width:560px){
+    /* the title eats the width on a phone, leaving the motto in a five-line
+       sliver beside it — give it its own line instead */
+    header{flex-direction:column;align-items:flex-start;gap:3px}
+    h1{font-size:24px;letter-spacing:.24em}
+    .motto{font-size:13px}
+    .folio{padding:14px 14px 12px}
+  }
+  @media (prefers-reduced-motion:reduce){ /* sim speed unaffected; no decorative motion exists */ }
+</style>
+</head>
+<body>
+<div class="folio">
+  <header>
+    <h1>SEDI<span class="g">M</span>ENT</h1>
+    <div class="motto">everything settles &middot; little survives &middot; gold endures</div>
+  </header>
+
+  <div class="body">
+    <div class="stage">
+      <canvas id="c" width="640" height="400" aria-label="A small simulated world of sand, water, plants, fire and gold"></canvas>
+      <div class="status" id="status">the world is waking&hellip;</div>
+      <div class="vaultnote" id="vaultnote">The vault is unreachable — this world will live only until the page closes.</div>
+    </div>
+    <aside class="chronicle">
+      <h2>CHRONICLE</h2>
+      <div id="chron" aria-live="polite"></div>
+    </aside>
+  </div>
+
+  <div class="bench" id="bench">
+    <button data-el="2" class="sel">Sand</button>
+    <button data-el="3">Water</button>
+    <button data-el="4">Seed</button>
+    <button data-el="6">Fire</button>
+    <button data-el="1">Stone</button>
+    <button data-el="10">Timber</button>
+    <button data-el="11">Brick</button>
+    <button data-el="9" class="goldbtn" id="goldbtn">Gold&nbsp;Leaf</button>
+    <button data-el="0">Erase</button>
+    <label>brush <input type="range" id="brush" min="1" max="6" value="2"></label>
+    <div class="spacer"></div>
+    <span class="grains" id="grains"></span>
+    <button id="pause">Pause</button>
+    <button id="speed">Time &times;1</button>
+    <button id="save">Preserve</button>
+  </div>
+
+  <footer class="colophon">
+    SEDIMENT — an interactive by Maxim Starkweather &middot;
+    <a href="https://temperaturezero.com">temperaturezero.com</a>
+  </footer>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+// ---------- constants ----------
+const W = 160, H = 100, SCALE = 4;
+const EMPTY=0, STONE=1, SAND=2, WATER=3, SEED=4, PLANT=5, FIRE=6, EMBER=7, ASH=8, GOLD=9, TIMBER=10, BRICK=11, FLOWER=12, ROOT=13;
+const GOLD_BUDGET = 400;
+const TICKS_PER_DAY = 900;
+const SAVE_KEY = "sediment-world-v1";
+
+// ---------- tunables ----------
+// Per-tick rates. The sim runs one step per animation frame at Time x1, so a
+// probability p means roughly p*60 events per second per eligible cell.
+// Measured against qa/harness.mjs — change these, re-run the harness.
+const P_SAND_SINK      = 0.6;     // sand displacing water beneath it
+const WATER_REACH      = 8;       // how far water looks along a surface for a drain
+const P_WATER_CREEP    = 0.22;    // sideways drift when there is nowhere to drain
+const P_ASH_FALL       = 0.55;    // ash settles slower than sand
+const P_ASH_SINK       = 0.30;    // ash working its way down through water
+// Ash has to go somewhere. Plants are a matter source — one seed becomes two
+// dozen cells and every one of them ends as ash — so with no sink the world
+// silts up: measured at 6295 ash cells, 39% of the grid, with the pond filled
+// in and the forest starved out behind it.
+const P_ASH_DECAY      = 0.0006; // ash weathering away to nothing
+const P_SEED_SCATTER   = 0.30;    // density when painting seed
+const P_SEED_SINK      = 0.40;    // seed sinking through water
+const P_SEED_GERMINATE = 0.03;    // per tick, once bedded on sand/ash near water
+// The seed bank, and the reason a forest cannot be wiped out for good. Growth
+// is a delayed, synchronised business: a cohort sown together flowers together
+// and dies together, so the population booms and busts hard. With short-lived
+// seed the bust simply ends it — measured, 3 runs in 4 went extinct inside 60
+// days. Dormant seed rides out the crash and re-establishes afterwards.
+const SEED_LIFESPAN    = 25000;   // ticks before an ungerminated seed may expire
+const P_SEED_EXPIRE    = 0.0004;
+// How far from water a seed will bed in, and how far water runs along a root,
+// are the strain's own business now — see TRAIT_REACH and TRAIT_ROOT_W below.
+// The wild-type values are the 6 and 10 these constants used to hold. A seed
+// looking for a wet root is gone as a separate rule: roots that still carry
+// water are sources in the water field, so one distance covers both.
+const P_PLANT_GROW     = 0.02;
+// Per *cell*, per tick. A mature stalk is ~24 cells and lives ~5000 ticks, so
+// this works out to roughly 4 side shoots over a plant's life. Anything near the
+// wither rate (0.002) and branching outpaces dying: the stand stops being a
+// plant and becomes a vine that colonises the whole world.
+const P_PLANT_BRANCH   = 0.00004;
+const PLANT_LIFESPAN   = 4500;    // +/- noise, then it may wither
+// Applies only to a tip, so a whole stalk dies back one cell at a time; the
+// rate is per-cell, not per-plant, and a 24-cell tree takes ~24x this to go.
+const P_PLANT_WITHER   = 0.01;
+// Flowering and seed-set. This is the only way the world makes new seed on its
+// own, which makes it the population's throttle as much as its engine.
+// Measured on the tip cell, which is the YOUNGEST cell in the stalk — it was
+// created last. A high value here delays flowering by its full amount *after*
+// the tree finishes growing, and reproduction falls below replacement.
+const FLOWER_AGE       = 600;
+const FLOWER_MIN_H     = 6;       // ground-level sprouts do not flower
+const P_FLOWER         = 0.006;   // per eligible tip per tick
+const P_FLOWER_SEED    = 0.004;   // a flower gets ONE attempt, then reverts.
+                                  // This also sets how long it stays open: at
+                                  // 0.02 a flower was gone in under a second and
+                                  // the bloom was never actually visible.
+const SEED_THROW       = 12;      // how far the wind carries a dropped seed
+// Crowding. Reproduction outruns withering exactly the way branching did, so
+// new seed only takes where there is room for it.
+const SEED_CROWD_R     = 4;
+const SEED_CROWD_MAX   = 20;
+// Heartwood: growth old enough to harden into timber.
+const LIGNIFY_AGE      = 6000;
+const P_LIGNIFY        = 0.02;
+// Only the base of a stalk goes woody. Without a cap it runs all the way up:
+// once the bottom cell is timber the one above is "rooted" on it and hardens
+// too, so a whole tree lignifies faster than its crown dies back and the world
+// ends up all stumps and no green — measured at 360 timber against 2 plants.
+const LIGNIFY_MAX_H    = 4;
+// Grown wood also has to leave again, or stumps accumulate for ever. Only
+// heartwood dries out like this; timber the player laid stays put.
+const P_HEARTWOOD_ROT  = 0.00005;
+const HEARTWOOD        = 255;     // parked in stalk[] to tell grown wood from built
+// Roots. They creep through soil only — the bedrock stops them — and they carry
+// water: a root beside a pool is wet, and wetness travels along the network,
+// losing a cell of reach each step. That is what lets a stand establish further
+// out than the pool alone would allow, while still being bounded by how far the
+// roots can actually reach back to water.
+const P_ROOT_GROW      = 0.005;   // per root (or plant base) per tick
+const ROOT_LIFESPAN    = 9000;
+const P_ROOT_DIE       = 0.004;   // dead roots go back to sand, so soil is kept
+const ROOT_CROWD_MAX   = 3;       // keeps roots as tendrils, not a solid mass
+// A root gives back exactly the material it displaced. It used to always die to
+// sand, which reads as "the soil is kept" and is not: a root that grew through
+// an ash bed and died as sand quietly turned ash into terrain, and ash is the
+// only thing plants make that ever leaves again. Measured over 200 sown days,
+// sand climbed 447 -> 2803 cells with stone flat at 1381, so none of it was
+// erosion — it was the forest laundering its own leavings into ground that can
+// never weather away, on course to bury the pools it lives on. Roots carry one
+// bit in stalk[] saying which they came from; the low bits stay the wetness.
+const ROOT_IN_ASH      = 128;
+const ROOT_WET         = 127;
+const P_FIRE_TO_PLANT  = 0.28;    // aggressive
+// Moderate, but it has to be high enough that a fire reliably crosses from one
+// timber cell to the next before burning out (~30 ticks): below ~0.08 the chain
+// stalls after a handful of cells and fire never really "spreads" to a build.
+const P_FIRE_TO_TIMBER = 0.09;
+const P_FIRE_LICK      = 0.10;    // flame reaching upward into empty air
+const FIRE_LIFE        = 30;      // +/- noise
+const EMBER_LIFE       = 45;
+const P_EMBER_TO_ASH   = 0.55;    // otherwise it leaves nothing
+const P_STONE_ERODE    = 0.00015; // stone worn to sand where water touches it
+const P_TIMBER_ROT     = 0.00025; // timber rotting to ash in water
+const P_BRICK_WEATHER  = 0.00008; // brick weathering to sand in water (slower than stone)
+
+// ---------- the genome ----------
+// One byte per living cell: four traits of two bits each, carried in a flat
+// typed array alongside cells/age/stalk. Traits are read through 256-entry
+// lookup tables built once at boot, because unpacking bits per cell per tick is
+// exactly the sort of thing that eats the frame budget — the tables turn a trait
+// read in the hot loop into a single array index.
+const G_HEIGHT=0, G_BRANCH=2, G_REACH=4, G_HUE=6;
+const gmk=(h,b,r,u)=>(h&3)|((b&3)<<2)|((r&3)<<4)|((u&3)<<6);
+const gtr=(g,shift)=>(g>>shift)&3;
+// Index 1 of every trait is the wild type — the plant SEDIMENT had before it had
+// a genome — so a world sown today starts where the old one left off and drifts
+// away from there rather than starting somewhere new.
+const TRAIT_MAX_H  = [14, 24, 31, 38];      // replaces PLANT_MAX_H
+const TRAIT_BRANCH = [0.35, 1, 2.4, 5];     // x P_PLANT_BRANCH
+// What height and branching cost, in cells of the water reach below. Both are
+// otherwise free wins — more tips means more flowers means more seed — and a
+// free win fixes at its maximum and stays there: measured, by day 300 every
+// region had run to the tallest, thickest genome available and the world was a
+// wall of green with the pools invisible behind it. Paying for size in thirst
+// puts the tall thickets where the water is and leaves low scrub everywhere
+// else, which is a landscape rather than a lawn.
+const THIRST_H     = [-1, 0, 2, 4];
+const THIRST_B     = [0, 0, 1, 2];
+// Water reach is the lever the whole thing turns on: how far from water a seed
+// will bed in, how far from water what grows can hold on, and how far water
+// travels along this strain's own roots. Ground away from a pool is habitable
+// only by a strain that has drifted toward the far end of this scale.
+//
+// The top of the scale is deliberately short of the distance between the two
+// pools. Let the best genome reach the middle of the world and the middle of the
+// world fills in, and the dry heart that makes the drift worth watching — the
+// ground a strain has to become something else to hold — stops existing.
+const TRAIT_REACH  = [4, 6, 8, 10];         // replaces SEED_WATER_RANGE
+const TRAIT_ROOT_W = [4, 9, 12, 14];        // replaces ROOT_WET_MAX
+// ...and the price of it. Drought tolerance is paid for in growth rate, so a
+// thirsty strain reaches flowering height well before a tolerant one and takes
+// the shoreline on sheer turnover, while the tolerant strain is the only thing
+// that can hold ground further out. Without a cost on this trait it simply fixes
+// at its maximum everywhere and there is no gradient left to look at.
+const TRAIT_GROW   = [1.6, 1, 0.6, 0.38];   // x P_PLANT_GROW
+// Per seed set. One trait steps one notch, so a lineage drifts in a direction
+// instead of jittering; a reroll would be noise, not descent.
+const P_MUTATE     = 0.18;
+// The census that reads the strains is a whole-grid pass, so it runs once an
+// in-game day rather than once a tick, and only speaks up when a region has
+// enough growth in it to be saying something about.
+const DRIFT_MIN_POP = 40;
+// The first fortnight is a world establishing itself, not a lineage going
+// anywhere: sown seed sorts itself onto the ground that suits it within a day or
+// two, and reading that as descent had the chronicle announcing three strains by
+// day 17 and then having nothing left to say. Baselines are taken after this.
+const DRIFT_SETTLE  = 12;
+const DRIFT_MARGIN  = 0.45;  // mean trait notches away from wild type
+const DIVERGE_GAP   = 0.9;   // mean notches between two regions' strains
+
+// Reach buys nothing unless being out of reach costs something. Germination
+// alone turned out to be far too thin a lever: the frontier is a sliver of the
+// stand, so a handful of tolerant seedlings out at the edge were swamped by gene
+// flow from the crowd back at the shore, and the trait drifted the *wrong* way —
+// measured, mean reach fell from wild type toward the thirstiest strain in every
+// region. So a plant holds only ground it can drink on: past its own reach from
+// water, a tip gives up far faster than age alone would take it, and the whole
+// stand is under selection rather than just its edge.
+const P_DROUGHT_WITHER = 0.03;
+// The furthest from water any genome can be, which is what the field is capped
+// at: the thirstiest reach, less the discount the smallest plant gets for it.
+const REACH_MAX = Math.max(...TRAIT_REACH) - Math.min(...THIRST_H) - Math.min(...THIRST_B);
+
+const LUT_MAXH=new Uint8Array(256), LUT_DRINK=new Uint8Array(256),
+      LUT_ROOTW=new Uint8Array(256),
+      LUT_PGROW=new Float32Array(256), LUT_PBRANCH=new Float32Array(256);
+for(let g=0;g<256;g++){
+  LUT_MAXH[g]    = TRAIT_MAX_H[gtr(g,G_HEIGHT)];
+  LUT_PBRANCH[g] = P_PLANT_BRANCH*TRAIT_BRANCH[gtr(g,G_BRANCH)];
+  LUT_ROOTW[g]   = TRAIT_ROOT_W[gtr(g,G_REACH)];
+  LUT_PGROW[g]   = P_PLANT_GROW*TRAIT_GROW[gtr(g,G_REACH)];
+  // How far from water this strain can live at all — what it can reach, less
+  // what its own size drinks. One number, used both for whether a seed will bed
+  // in and for whether what grew from it can hold on. Never zero: a plant that
+  // cannot live where it stands even with its feet in the pool is not a strain,
+  // it is a bug that would look like one.
+  LUT_DRINK[g]   = Math.max(1, TRAIT_REACH[gtr(g,G_REACH)]
+                             - THIRST_H[gtr(g,G_HEIGHT)] - THIRST_B[gtr(g,G_BRANCH)]);
+}
+// The plant SEDIMENT had before it had a genome. Growth in a world saved before
+// v3 comes back as this, moss tint and all, which is exactly how it looked.
+const WILD_GENE=gmk(1,1,1,0);
+// Seed the visitor scatters is wild type give or take a notch, with a random
+// tint so the lineages that come out of it can be told apart on sight from the
+// first day. Sowing it all identical was truer to the story — the world starts
+// uniform and diverges — but it made the first hundred days mutation-limited and
+// nothing visible happened until day 200. A handful is not a clone.
+const sowTrait=()=>{ const r=R(); return r<0.15?0:r<0.85?1:2; };
+const sowGene=()=>gmk(sowTrait(),sowTrait(),sowTrait(),(R()*4)|0);
+// the tallest any genome can be, used when rebuilding stalk heights from a save
+const MAX_STALK = Math.max(...TRAIT_MAX_H);
+
+// ---------- state ----------
+const N = W*H;
+let cells = new Uint8Array(N);
+let age   = new Uint16Array(N);
+// height above the root, per plant cell. Measuring a stalk by counting the
+// contiguous plant cells below it looks equivalent but is not: a branch hanging
+// in air, or a cell that withers to ash mid-stalk, resets the count to 1 and
+// lets the plant climb another full cap. Carrying the height explicitly is the
+// only way "max ~24 tall" actually holds.
+let stalk = new Uint8Array(N);
+// the genome of whatever is alive in each cell. Dead cells keep whatever was
+// last there — nothing reads it, and every site that makes a living cell writes
+// it — but the save strips it so the encoding stays compressible.
+let gene  = new Uint8Array(N);
+let stamp = new Int32Array(N);
+const noise = new Float32Array(N);
+for (let i=0;i<N;i++) noise[i] = Math.random()*2-1;
+
+let frame=0, tick=0, day=1, goldLeft=GOLD_BUDGET;
+let paused=false, speed=1;
+let chron=[]; // [{d, m}] newest first
+// Booleans for one-off chronicle entries. Genesis and the initial state used to
+// spell this list out twice, which is a standing invitation for the two copies
+// to disagree. The drift notes add their own keys as they fire (`reach|the west`
+// and so on) rather than being enumerated, since there is one per trait per
+// region.
+const freshFlags=()=>({sprout:false, fire:false, gilt:false, erode:false, tall:false,
+  bigfire:false, build:false, great:false, burnbuild:false, flower:false, sown:false,
+  heart:false, mutate:false, diverge:false});
+let flags=freshFlags();
+let bigFireBurning=false;
+let dayMilestones=[10,25,50,100,200,365];
+let storageOK=true, dirty=false;
+
+const idx=(x,y)=>y*W+x;
+const inB=(x,y)=>x>=0&&x<W&&y>=0&&y<H;
+const R=Math.random;
+
+// ---------- regions ----------
+const REGIONS=["the west","the heartlands","the east"];
+const regionOf=x => x < W/3 ? 0 : x < 2*W/3 ? 1 : 2;
+function region(x){ return REGIONS[regionOf(x)]; }
+
+// ---------- chronicle ----------
+const chronEl=document.getElementById("chron");
+function log(msg){
+  chron.unshift({d:day, m:msg});
+  if (chron.length>200) chron.length=200;
+  renderChron();
+  dirty=true;
+}
+function renderChron(){
+  chronEl.innerHTML = chron.map(e=>
+    `<p><span class="d">Day ${e.d}</span> — <span class="m">${e.m}</span></p>`).join("");
+}
+
+// ---------- world genesis ----------
+function genesis(){
+  cells.fill(EMPTY); age.fill(0); stalk.fill(0); gene.fill(0);
+  // stone bedrock with an uneven brow
+  for (let x=0;x<W;x++){
+    const g = H-9 + Math.round(3*Math.sin(x/11) + 2*Math.sin(x/29+2) + noise[x]*1.2);
+    for (let y=g;y<H;y++) cells[idx(x,y)]=STONE;
+    // a dusting of sand atop the stone
+    const sd = 2 + Math.round(1.5+1.5*Math.sin(x/7+1));
+    for (let y=g-sd;y<g;y++) if(y>0) cells[idx(x,y)]=SAND;
+  }
+  // carve a bowl and fill it: dig down from the surface, then flood the band
+  const pool=(x0,x1,deep,top,bot)=>{
+    for (let x=x0;x<x1;x++){
+      const depth = Math.round(deep*Math.sin((x-x0)/(x1-x0)*Math.PI));
+      for (let d=0; d<depth; d++){
+        // find surface then dig
+        for (let y=0;y<H;y++){
+          const i=idx(x,y);
+          if (cells[i]!==EMPTY){ cells[i]=EMPTY; break; }
+        }
+      }
+    }
+    for (let x=x0+2;x<x1-2;x++){
+      for (let y=top;y<bot;y++){
+        const i=idx(x,y);
+        if (cells[i]===EMPTY) cells[i]=WATER;
+      }
+    }
+  };
+  pool(104,134,5,H-16,H-8);  // the pond in the east
+  // A second, far smaller pool in the west. The eastern pond is broad enough
+  // that most of what grows around it is shoreline; this one is nearly all
+  // frontier, so the two ends of the world put different pressure on whatever
+  // takes root there and their strains drift apart. It is also the only reason
+  // the west is habitable at all — with one pool the far half of the world was
+  // simply out of reach of any genome, and nothing could drift anywhere.
+  pool(20,36,4,H-15,H-9);
+  invalidateWater();
+  day=1; tick=0; goldLeft=GOLD_BUDGET;
+  chron=[]; flags=freshFlags();
+  log("In the beginning: stone, sand, still water, and light.");
+}
+
+// ---------- the census ----------
+// Once an in-game day, read what is actually growing in each third of the world
+// and say so when a region's strain has moved measurably off the wild type it
+// was sown as. A whole-grid pass every tick would be unaffordable; once a day it
+// is free, and a day is the resolution the chronicle speaks in anyway.
+const DRIFT_NOTES=[
+  {shift:G_REACH,  key:"reach",
+   up:  r=>`A strain in ${r} learned to live further from water.`,
+   down:r=>`The growth in ${r} has crowded back to the water's edge.`},
+  {shift:G_HEIGHT, key:"height",
+   up:  r=>`The growth in ${r} runs taller than its forebears.`,
+   down:r=>`What grows in ${r} has become a low and hurried thing.`},
+  {shift:G_BRANCH, key:"branch",
+   up:  r=>`Something in ${r} took to branching, and made a thicket of itself.`,
+   down:r=>`The stand in ${r} has given up its side shoots.`},
+];
+const REACH_K=0; // DRIFT_NOTES[0] is water reach — the trait divergence is judged on
+function census(){
+  if (day<DRIFT_SETTLE) return;
+  const pop=[0,0,0], sum=[[0,0,0],[0,0,0],[0,0,0]]; // [region][DRIFT_NOTES index]
+  for (let i=0;i<N;i++){
+    const t=cells[i];
+    if (t!==PLANT && t!==FLOWER) continue;
+    const r=regionOf(i%W), g=gene[i];
+    pop[r]++;
+    for (let k=0;k<DRIFT_NOTES.length;k++) sum[r][k]+=gtr(g,DRIFT_NOTES[k].shift);
+  }
+  for (let r=0;r<3;r++){
+    if (pop[r]<DRIFT_MIN_POP) continue; // too few to be saying anything about
+    for (let k=0;k<DRIFT_NOTES.length;k++){
+      const n=DRIFT_NOTES[k], key=n.key+"|"+REGIONS[r], base="b:"+key;
+      if (flags[key]) continue;
+      const mean=sum[r][k]/pop[r];
+      // "than its forebears" has to mean the plants that were actually here, not
+      // a constant. A handful of sown seed is not all one plant, and the ground
+      // sorts it within a day or two — measured against wild type these notes
+      // fired on day 6, which reads as drift and is nothing of the kind. The
+      // first census a region is populous enough for becomes its own baseline.
+      if (flags[base]===undefined){ flags[base]=mean; continue; }
+      if (mean >= flags[base]+DRIFT_MARGIN){ flags[key]=true; log(n.up(REGIONS[r])); }
+      else if (mean <= flags[base]-DRIFT_MARGIN){ flags[key]=true; log(n.down(REGIONS[r])); }
+    }
+  }
+  if (!flags.diverge){
+    for (let a=0;a<3;a++) for (let b=a+1;b<3;b++){
+      if (pop[a]<DRIFT_MIN_POP || pop[b]<DRIFT_MIN_POP) continue;
+      if (Math.abs(sum[a][REACH_K]/pop[a] - sum[b][REACH_K]/pop[b]) >= DIVERGE_GAP){
+        flags.diverge=true;
+        log(`What grows in ${REGIONS[a]} and what grows in ${REGIONS[b]} are no longer the same plant.`);
+        return;
+      }
+    }
+  }
+}
+
+// ---------- how far anything is from a drink ----------
+// Every seed used to scan a box around itself for water, and every plant would
+// now have to do the same to know whether it is in drought — a 23x23 scan per
+// roll at the longest reach, landing squarely in the hot loop the perf budget is
+// measured on. One flood-fill shared by the whole world is cheaper than the
+// scans it replaces: distance is Chebyshev, so it measures exactly what the old
+// box scan measured, capped at the furthest any genome can drink from.
+//
+// Roots that still carry water are sources too, which is what lets a stand hold
+// ground the pool alone could not reach — and keeps that bound honest, since a
+// root is only wet while it can trace its own way back to open water.
+const FIELD_EVERY = 24;   // ticks between rebuilds; water moves far slower than this
+const waterField = new Uint8Array(N);
+const colWater   = new Uint8Array(W); // the driest a whole column gets, for drought
+const fieldQ     = new Int32Array(N);
+let fieldTick    = -1e9;
+
+// Nothing drinks from damp ground. A cell only counts as water a plant can live
+// on if it is part of an actual body of it — measured, a forest silts up its own
+// ponds: ash sinks, the water it displaces spills over the rim and creeps out
+// across the flat until 205 cells of what used to be two pools are a film over
+// ninety columns, and every last acre of the world is within reach of a puddle.
+// The dry heart the whole drift depends on simply stops existing around day 450.
+// One cell deep has two neighbours; two cells deep has five.
+const POOL_MIN = 4;
+function isPool(i){
+  const x=i%W, y=(i/W)|0;
+  let n=0;
+  for (let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+    if (!dx && !dy) continue;
+    const nx=x+dx, ny=y+dy;
+    if (nx<0||nx>=W||ny<0||ny>=H) continue;
+    if (cells[ny*W+nx]===WATER && ++n>=POOL_MIN) return true;
+  }
+  return false;
+}
+
+function recomputeWaterField(){
+  waterField.fill(255); colWater.fill(255);
+  let h=0, t=0;
+  for (let i=0;i<N;i++){
+    const c=cells[i];
+    if ((c===WATER && isPool(i)) || (c===ROOT && (stalk[i]&ROOT_WET)>0)){
+      waterField[i]=0; colWater[i%W]=0; fieldQ[t++]=i;
+    }
+  }
+  while (h<t){
+    const i=fieldQ[h++], d=waterField[i];
+    if (d>=REACH_MAX) continue;
+    const x=i%W, y=(i/W)|0, nd=d+1;
+    for (let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+      const nx=x+dx, ny=y+dy;
+      if (nx<0||nx>=W||ny<0||ny>=H) continue;
+      const j=ny*W+nx;
+      if (waterField[j]===255){
+        waterField[j]=nd; fieldQ[t++]=j;
+        if (nd<colWater[nx]) colWater[nx]=nd;
+      }
+    }
+  }
+  fieldTick=tick;
+}
+const invalidateWater=()=>{ fieldTick=-1e9; };
+
+// ---------- simulation ----------
+function solid(t){
+  return t===STONE||t===SAND||t===TIMBER||t===BRICK||t===GOLD;
+}
+
+// ---------- structural support ----------
+// A built cell holds if it rests on the ground or chains sideways back to
+// something grounded. Asking each cell only "is a neighbour solid?" lets a
+// floating span prop itself up — every cell leans on the next and nothing ever
+// falls — so support is flood-filled out from real anchors instead.
+const supported=new Uint8Array(N);
+const supportQ=new Int32Array(N);
+let supportValid=false;
+
+function built(t){ return t===TIMBER||t===BRICK; }
+function green(t){ return t===PLANT||t===FLOWER; }
+function rootsIn(t){ return t===STONE||t===SAND||t===ASH||t===GOLD||t===TIMBER||t===BRICK||t===ROOT; }
+function soil(t){ return t===SAND||t===ASH; }
+function rootCrowd(x,y){
+  let n=0;
+  for (let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+    const nx=x+dx, ny=y+dy;
+    if (inB(nx,ny) && cells[idx(nx,ny)]===ROOT) n++;
+  }
+  return n;
+}
+function restsOn(t){ return t!==EMPTY && t!==WATER && !built(t); } // ground underfoot
+function sideAnchor(t){ return t===STONE||t===SAND||t===GOLD; }    // a wall to lean on
+
+function recomputeSupport(){
+  supported.fill(0);
+  let qh=0, qt=0;
+  for (let i=0;i<N;i++){
+    const t=cells[i];
+    const isB=built(t), isG=green(t);
+    if (!isB && !isG) continue;
+    const x=i%W, y=(i/W)|0;
+    const below = y+1<H ? cells[i+W] : STONE; // the floor counts as ground
+    if (isB
+      ? (restsOn(below) || (x>0 && sideAnchor(cells[i-1])) || (x<W-1 && sideAnchor(cells[i+1])))
+      : rootsIn(below)){ // growth is held up only by what it is rooted in
+      supported[i]=1; supportQ[qt++]=i;
+    }
+  }
+  while (qh<qt){
+    const i=supportQ[qh++];
+    const isB=built(cells[i]);
+    const x=i%W, y=(i/W)|0;
+    // neighbours lean on this one; the cell above rests on it. A stalk cannot
+    // hold up a wall and a wall cannot hold up a stalk, so the two networks
+    // propagate separately.
+    if (x>0   && !supported[i-1] && (isB?built(cells[i-1]):green(cells[i-1]))){ supported[i-1]=1; supportQ[qt++]=i-1; }
+    if (x<W-1 && !supported[i+1] && (isB?built(cells[i+1]):green(cells[i+1]))){ supported[i+1]=1; supportQ[qt++]=i+1; }
+    if (y>0   && !supported[i-W] && (isB?built(cells[i-W]):green(cells[i-W]))){ supported[i-W]=1; supportQ[qt++]=i-W; }
+  }
+  supportValid=true;
+}
+// How much green is already here. Without a crowding limit a self-seeding stand
+// fills every cell it can reach — the same failure branching had, with a much
+// stronger engine behind it.
+function crowded(x,y){
+  let n=0;
+  for (let dy=-SEED_CROWD_R;dy<=SEED_CROWD_R;dy++)for(let dx=-SEED_CROWD_R;dx<=SEED_CROWD_R;dx++){
+    const nx=x+dx, ny=y+dy;
+    if (!inB(nx,ny)) continue;
+    const t=cells[idx(nx,ny)];
+    if ((t===PLANT||t===FLOWER) && ++n>=SEED_CROWD_MAX) return true;
+  }
+  return false;
+}
+// Growth that loses its footing collapses. Without this a stalk whose base
+// withers — and whose ash then falls away or dissolves — goes on hanging in the
+// air, and a mature world fills with green clumps floating over the ground.
+function standing(x,y,i){
+  const under = y+1<H ? cells[idx(x,y+1)] : STONE;
+  if (under!==EMPTY && under!==WATER) return true;
+  if (!supportValid) recomputeSupport();
+  return supported[i]===1;
+}
+// standing on ground or on wood already hardened, rather than hanging in air
+function rooted(x,y){
+  const b = y+1<H ? cells[idx(x,y+1)] : STONE;
+  return b===TIMBER||b===STONE||b===SAND||b===ASH||b===BRICK||b===GOLD;
+}
+function plantHeight(x,y){
+  let h=0, yy=y;
+  while (yy<H && cells[idx(x,yy)]===PLANT && h<40){ h++; yy++; }
+  return h;
+}
+function set(i,t,a){ cells[i]=t; age[i]=a||0; stamp[i]=frame; }
+
+// Inheritance slips exactly once, when a flower sets seed. One trait moves one
+// notch, so a lineage walks in a direction and the walk is legible as descent;
+// rerolling the trait would give the same variance as noise and none of the
+// story. Tint is the exception — its four values have no order, so it jumps.
+function mutate(g){
+  if (R()>=P_MUTATE) return g;
+  const shift=[G_HEIGHT,G_BRANCH,G_REACH,G_HUE][(R()*4)|0];
+  const v=gtr(g,shift);
+  const nv = shift===G_HUE ? (v + 1 + ((R()*3)|0)) & 3
+                           : Math.max(0, Math.min(3, v + (R()<0.5?-1:1)));
+  if (nv===v) return g; // a step off either end of the scale goes nowhere
+  if (!flags.mutate){ flags.mutate=true; log("A seed fell that was not quite its parent."); }
+  return (g & ~(3<<shift)) | (nv<<shift);
+}
+
+function step(){
+  frame++; tick++;
+  supportValid=false; // the world shifted under everything built; re-derive on demand
+  if (tick-fieldTick>=FIELD_EVERY || fieldTick>tick) recomputeWaterField();
+  if (tick % TICKS_PER_DAY === 0){
+    day++;
+    const m = dayMilestones[0];
+    if (m && day>=m){ dayMilestones.shift(); log(`The world entered its ${day}th day.`); }
+    census();
+  }
+  let fireCount=0, plantCount=0, builtCount=0;
+  const ltr = (frame & 1) === 0;
+
+  for (let y=H-1; y>=0; y--){
+    for (let xi=0; xi<W; xi++){
+      const x = ltr ? xi : W-1-xi;
+      const i = idx(x,y);
+      if (stamp[i]===frame) continue;
+      const t = cells[i];
+      if (t===EMPTY || t===GOLD) continue;
+
+      switch(t){
+
+        case SAND: {
+          const b=idx(x,y+1);
+          if (y+1<H){
+            const bt=cells[b];
+            if (bt===EMPTY){ set(b,SAND); set(i,EMPTY); break; }
+            if (bt===WATER && R()<P_SAND_SINK){ cells[b]=SAND; cells[i]=WATER; stamp[b]=frame; break; }
+            const dir = R()<0.5?-1:1;
+            for (const dx of [dir,-dir]){
+              const nx=x+dx;
+              if (inB(nx,y+1) && cells[idx(nx,y+1)]===EMPTY && cells[idx(nx,y)]===EMPTY){
+                set(idx(nx,y+1),SAND); set(i,EMPTY); break;
+              }
+            }
+          }
+          break;
+        }
+
+        case ASH: {
+          // roots hold the soil: ash with something growing on it stays put,
+          // otherwise decay pulls the ground out and leaves plants in mid-air
+          if (R()<P_ASH_DECAY && !(y>0 && (cells[idx(x,y-1)]===PLANT || cells[idx(x,y-1)]===FLOWER))){
+            set(i,EMPTY); break;
+          }
+          if (R()<P_ASH_FALL && y+1<H){
+            const b=idx(x,y+1), bt=cells[b];
+            if (bt===EMPTY){ set(b,ASH); set(i,EMPTY); break; }
+            if (bt===WATER && R()<P_ASH_SINK){ cells[b]=ASH; cells[i]=WATER; stamp[b]=frame; break; }
+            const dir=R()<0.5?-1:1, nx=x+dir;
+            if (inB(nx,y+1) && cells[idx(nx,y+1)]===EMPTY && cells[idx(nx,y)]===EMPTY){
+              set(idx(nx,y+1),ASH); set(i,EMPTY);
+            }
+          }
+          break;
+        }
+
+        case WATER: {
+          if (y+1<H && cells[idx(x,y+1)]===EMPTY){ set(idx(x,y+1),WATER); set(i,EMPTY); break; }
+          let moved=false;
+          const dir=R()<0.5?-1:1;
+          for (const dx of [dir,-dir]){
+            const nx=x+dx;
+            if (inB(nx,y+1) && cells[idx(nx,y+1)]===EMPTY){
+              set(idx(nx,y+1),WATER); set(i,EMPTY); moved=true; break;
+            }
+          }
+          if (moved) break;
+          // Look along the surface for the nearest cell it could descend from and
+          // step toward it. A purely random sidestep makes water twitch in place;
+          // aiming at the drain is what makes it find its level.
+          let flow=0, best=WATER_REACH+1;
+          for (const dx of [dir,-dir]){
+            for (let d=1; d<=WATER_REACH; d++){
+              const nx=x+dx*d;
+              if (!inB(nx,y) || cells[idx(nx,y)]!==EMPTY) break; // wall — stop looking this way
+              if (y+1<H && cells[idx(nx,y+1)]===EMPTY){
+                if (d<best){ best=d; flow=dx; }
+                break;
+              }
+            }
+          }
+          if (flow!==0){ set(idx(x+flow,y),WATER); set(i,EMPTY); break; }
+          // Nowhere to drain: creep sideways occasionally, enough to even out a
+          // flat surface without the whole pond shivering every tick.
+          if (R()<P_WATER_CREEP){
+            for (const dx of [dir,-dir]){
+              const nx=x+dx;
+              if (inB(nx,y) && cells[idx(nx,y)]===EMPTY){
+                set(idx(nx,y),WATER); set(i,EMPTY); break;
+              }
+            }
+          }
+          break;
+        }
+
+        case SEED: {
+          const g=gene[i];
+          if (y+1<H && cells[idx(x,y+1)]===EMPTY){ const j=idx(x,y+1); set(j,SEED,age[i]); gene[j]=g; set(i,EMPTY); break; }
+          if (y+1<H && cells[idx(x,y+1)]===WATER && R()<P_SEED_SINK){ // sink through water
+            const j=idx(x,y+1);
+            cells[j]=SEED; age[j]=age[i]; gene[j]=g; cells[i]=WATER; age[i]=0; stamp[j]=frame; break;
+          }
+          age[i]++;
+          const below = y+1<H ? cells[idx(x,y+1)] : STONE;
+          // roll first: crowded() is the expensive part of this case now that
+          // water is a field lookup rather than a scan
+          if (R()<P_SEED_GERMINATE && (below===SAND||below===ASH||below===ROOT)
+              && waterField[i]<=LUT_DRINK[g]
+              && !crowded(x,y)){
+            set(i,PLANT,0); stalk[i]=1;
+            if (!flags.sprout){ flags.sprout=true; log(`The first green thing took root in ${region(x)}.`); }
+            break;
+          }
+          if (age[i]>SEED_LIFESPAN && R()<P_SEED_EXPIRE){ set(i,EMPTY); } // seeds are not forever
+          break;
+        }
+
+        case PLANT: {
+          plantCount++;
+          age[i]++;
+          const g=gene[i];
+          if (!standing(x,y,i)) { set(i,ASH); break; }
+          // Heartwood. Growth that lives long enough hardens to timber, but only
+          // from the base upward — a trunk goes woody while the foliage above it
+          // stays soft, and a branch left hanging in air never does.
+          if (age[i] > LIGNIFY_AGE && stalk[i]<=LIGNIFY_MAX_H && R()<P_LIGNIFY && rooted(x,y)){
+            set(i,TIMBER,0); stalk[i]=HEARTWOOD;
+            if (!flags.heart){ flags.heart=true; log(`The oldest wood in ${region(x)} hardened into timber.`); }
+            break;
+          }
+          // grow upward, bounded by how far this shoot already is from its root.
+          // A shoot pushes loose seed aside instead of being walled in by it.
+          // Sowing a thick patch used to trap the one seed that germinated: the
+          // rest of the pile sat on top of it and growth needed EMPTY above.
+          const above = y>0 ? cells[idx(x,y-1)] : STONE;
+          const canGrow = y>0 && (above===EMPTY || above===SEED) && stalk[i]<LUT_MAXH[g];
+          if (canGrow && R()<LUT_PGROW[g]){
+            const j=idx(x,y-1);
+            // the displaced seed keeps its own genome, not the shoot's
+            if (above===SEED && y>1 && cells[idx(x,y-2)]===EMPTY){
+              const k=idx(x,y-2); set(k,SEED,age[j]); gene[k]=gene[j];
+            }
+            set(j,PLANT,0); stalk[j]=stalk[i]+1; gene[j]=g;
+            if (!flags.tall && stalk[j]>=18){ flags.tall=true; log(`A great growth in ${region(x)} reached toward the sky.`); }
+          }
+          // Once it can grow no further — at its genome's full height, with open
+          // air still above it — a tip may open. It used to be able to flower on
+          // any tick a growth roll happened to fail, from six cells up, which
+          // every strain reaches within a couple of hundred ticks of a
+          // 4500-tick life: growth rate then changed a plant's lifetime seed by
+          // about a seventh, so the cost of drought tolerance was very nearly
+          // free and reach drifted up wherever it was not outright fatal. Made
+          // to finish growing first, a slow grower spends roughly a third of the
+          // time in flower that a fast one does, and the shoreline is worth
+          // winning again.
+          else if (!canGrow && age[i]>FLOWER_AGE && stalk[i]>=FLOWER_MIN_H && y>0 && (above===EMPTY || above===SEED) && R()<P_FLOWER){
+            set(i,FLOWER,age[i]);
+            if (!flags.flower){ flags.flower=true; log(`The first flower opened in ${region(x)}.`); }
+            break;
+          }
+          // put down a root from the base of the stalk
+          if (stalk[i]===1 && y+1<H && soil(cells[idx(x,y+1)]) && R()<P_ROOT_GROW){
+            const j=idx(x,y+1), was=cells[j];
+            set(j,ROOT,0); stalk[j]=(was===ASH?ROOT_IN_ASH:0); gene[j]=g;
+          }
+          // branch — a side shoot inherits its parent's height, so branching
+          // cannot be used to climb past the cap
+          if (R()<LUT_PBRANCH[g]){
+            const dx=R()<0.5?-1:1, nx=x+dx;
+            if (inB(nx,y) && cells[idx(nx,y)]===EMPTY){
+              const j=idx(nx,y);
+              set(j,PLANT, age[i]); stalk[j]=stalk[i]; gene[j]=g;
+            }
+          }
+          // Die back from the tip. Withering a cell at random cuts the stalk in
+          // the middle, and since growth needs its roots the whole crown above
+          // the cut is orphaned and unzips — measured, a stand wiped itself out
+          // within a fortnight. Only a tip may go, so a tree retreats downward
+          // and the base is always the last of it to die. Thirst takes a tip the
+          // same way, and without waiting for old age.
+          if (y===0 || !green(cells[idx(x,y-1)])){
+            if (colWater[x]>LUT_DRINK[g] && R()<P_DROUGHT_WITHER){ set(i,ASH); break; }
+            if (age[i] > PLANT_LIFESPAN + noise[i]*1500 && R()<P_PLANT_WITHER){ set(i,ASH); }
+          }
+          break;
+        }
+
+        case ROOT: {
+          age[i]++;
+          // draw water: straight from a pool alongside, or along the network,
+          // one cell of reach lost per step
+          let wet=0;
+          for (const [dx,dy] of [[0,1],[0,-1],[1,0],[-1,0]]){
+            const nx=x+dx, ny=y+dy;
+            if (!inB(nx,ny)) continue;
+            const j=idx(nx,ny), nt=cells[j];
+            if (nt===WATER && isPool(j)){ wet=LUT_ROOTW[gene[i]]; break; }
+            if (nt===ROOT && (stalk[j]&ROOT_WET)-1>wet) wet=(stalk[j]&ROOT_WET)-1;
+          }
+          stalk[i]=wet|(stalk[i]&ROOT_IN_ASH); // wetness changes, provenance does not
+          // Creep on through the soil, but only while there is still water to
+          // carry. Ungated, the network weaves the whole soil layer into a
+          // lattice and piles it into a mound. Tying growth to wetness bounds
+          // the root halo to this strain's TRAIT_ROOT_W cells from open water,
+          // for free.
+          if (wet>0 && R()<P_ROOT_GROW){
+            const opts=[[0,1],[0,1],[-1,1],[1,1],[-1,0],[1,0]]; // biased downward
+            const [dx,dy]=opts[(R()*opts.length)|0];
+            const nx=x+dx, ny=y+dy;
+            if (inB(nx,ny)){
+              const j=idx(nx,ny);
+              const was=cells[j];
+              if (soil(was) && rootCrowd(nx,ny)<ROOT_CROWD_MAX){
+                set(j,ROOT,0); stalk[j]=(wet>0?wet-1:0)|(was===ASH?ROOT_IN_ASH:0); gene[j]=gene[i];
+              }
+            }
+          }
+          if (age[i]>ROOT_LIFESPAN && R()<P_ROOT_DIE){
+            set(i, (stalk[i]&ROOT_IN_ASH)?ASH:SAND); stalk[i]=0;
+          }
+          break;
+        }
+
+        case FLOWER: {
+          plantCount++;
+          age[i]++;
+          if (!standing(x,y,i)) { set(i,ASH); break; }
+          // One attempt at setting seed, then it falls back to leaf. One shot per
+          // flower is what stops a mature stand from seeding without limit.
+          if (R()<P_FLOWER_SEED){
+            const nx = x + (R()<0.5?-1:1)*(2+Math.floor(R()*SEED_THROW));
+            const ny = y - 1 - Math.floor(R()*3);
+            if (inB(nx,ny) && cells[idx(nx,ny)]===EMPTY){
+              const j=idx(nx,ny);
+              set(j,SEED,0); gene[j]=mutate(gene[i]); // the one place inheritance can slip
+              if (!flags.sown){ flags.sown=true; log(`The world sowed itself in ${region(nx)}.`); }
+            }
+            set(i,PLANT,age[i]);
+            break;
+          }
+          if (y===0 || !green(cells[idx(x,y-1)])){
+            if (colWater[x]>LUT_DRINK[gene[i]] && R()<P_DROUGHT_WITHER){ set(i,ASH); break; }
+            if (age[i] > PLANT_LIFESPAN + noise[i]*1500 && R()<P_PLANT_WITHER){ set(i,ASH); }
+          }
+          break;
+        }
+
+        case FIRE: {
+          fireCount++;
+          // water quenches
+          let doused=false;
+          for (const [dx,dy] of [[0,1],[0,-1],[1,0],[-1,0]]){
+            const nx=x+dx, ny=y+dy;
+            if (inB(nx,ny) && cells[idx(nx,ny)]===WATER){ set(i,EMPTY); doused=true; break; }
+          }
+          if (doused) break;
+          // spread to plants and timber
+          for (const [dx,dy] of [[0,1],[0,-1],[1,0],[-1,0]]){
+            const nx=x+dx, ny=y+dy;
+            if (!inB(nx,ny)) continue;
+            const nb=cells[idx(nx,ny)];
+            if (nb===PLANT && R()<P_FIRE_TO_PLANT){
+              set(idx(nx,ny),FIRE,0);
+              if (!flags.fire){ flags.fire=true; log(`Fire was set loose in ${region(nx)}.`); }
+            } else if (nb===TIMBER && R()<P_FIRE_TO_TIMBER){
+              set(idx(nx,ny),FIRE,0);
+              if (!flags.burnbuild){ flags.burnbuild=true; log("Fire found the timber. What was built began to burn."); }
+            }
+          }
+          // flame licks upward
+          if (y>0 && cells[idx(x,y-1)]===EMPTY && R()<P_FIRE_LICK){ set(idx(x,y-1),FIRE, 26); }
+          age[i]++;
+          if (age[i] > FIRE_LIFE + noise[i]*10){ set(i,EMBER,0); }
+          break;
+        }
+
+        case EMBER: {
+          age[i]++;
+          if (age[i]>EMBER_LIFE){ set(i, R()<P_EMBER_TO_ASH ? ASH : EMPTY); }
+          break;
+        }
+
+        case TIMBER:
+        case BRICK: {
+          // heartwood dries and crumbles back to soil; built timber does not
+          if (t===TIMBER && stalk[i]===HEARTWOOD && R()<P_HEARTWOOD_ROT){ set(i,ASH); stalk[i]=0; break; }
+          if (stalk[i]!==HEARTWOOD) builtCount++; // heartwood grew here, nobody built it
+          // slow decay beside water: timber rots, brick weathers
+          if (R()<(t===TIMBER?P_TIMBER_ROT:P_BRICK_WEATHER)){
+            for (const [dx,dy] of [[0,1],[0,-1],[1,0],[-1,0]]){
+              const nx=x+dx, ny=y+dy;
+              if (inB(nx,ny) && cells[idx(nx,ny)]===WATER){
+                set(i, t===TIMBER ? ASH : SAND);
+                break;
+              }
+            }
+            if (cells[i]!==t) break;
+          }
+          // support: holds if resting on something, or anchored back to ground
+          // through its neighbours (allows lintels and spans); one flood-fill
+          // per tick, and only once something is actually hanging over a gap
+          const below = y+1<H ? cells[idx(x,y+1)] : STONE;
+          if (below===EMPTY || below===WATER){
+            if (!supportValid) recomputeSupport();
+            if (!supported[i]){
+              const j=idx(x,y+1), mark=stalk[i];
+              if (below===EMPTY){ set(j,t); set(i,EMPTY); }
+              else { cells[j]=t; cells[i]=WATER; stamp[j]=frame; }
+              stalk[j]=mark; stalk[i]=0; // the heartwood mark falls with the wood
+            }
+          }
+          break;
+        }
+
+        case STONE: {
+          // slow erosion beside water — the world's memento mori
+          if (R()<P_STONE_ERODE){
+            for (const [dx,dy] of [[0,1],[0,-1],[1,0],[-1,0]]){
+              const nx=x+dx, ny=y+dy;
+              if (inB(nx,ny) && cells[idx(nx,ny)]===WATER){
+                set(i,SAND);
+                if (!flags.erode){ flags.erode=true; log("Water wore the first stone to sand. Nothing ungilded is safe."); }
+                break;
+              }
+            }
+          }
+          break;
+        }
+      }
+    }
+  }
+
+  // great-burning bookkeeping
+  if (fireCount>60 && !bigFireBurning){
+    bigFireBurning=true;
+    log("A great burning swept the world.");
+  }
+  if (bigFireBurning && fireCount===0){
+    bigFireBurning=false;
+    log("The burning ended. Ash settled over everything.");
+  }
+  if (!flags.great && builtCount>=150){
+    flags.great=true;
+    log("A great work now stands in the world.");
+  }
+  window.__plantCount = plantCount;
+}
+
+// ---------- rendering ----------
+const cv=document.getElementById("c");
+const ctx=cv.getContext("2d");
+ctx.imageSmoothingEnabled=false;
+const off=document.createElement("canvas"); off.width=W; off.height=H;
+const octx=off.getContext("2d");
+const img=octx.createImageData(W,H);
+const px=img.data;
+
+function shade(base, amt){ // base [r,g,b], amt -1..1
+  return [
+    Math.max(0,Math.min(255, base[0]+amt)),
+    Math.max(0,Math.min(255, base[1]+amt)),
+    Math.max(0,Math.min(255, base[2]+amt)),
+  ];
+}
+const C_PAPER=[233,223,198], C_STONE=[69,64,58], C_SAND=[209,188,146],
+      C_WATER=[111,142,168], C_SEED=[109,81,54], C_PLANT=[92,111,76],
+      C_FIRE=[192,86,44], C_FIRE2=[224,142,58], C_EMBER=[138,59,34],
+      C_ASH=[167,157,144], C_GOLD=[201,162,39], C_GOLD2=[232,200,90],
+      C_TIMBER=[121,88,54], C_BRICK=[143,80,60], C_FLOWER=[178,108,132], C_ROOT=[96,68,44];
+// The tint a lineage carries. Four pigments a copyist would have had on the
+// bench — the wild type keeps the moss it always was — so a strain is a thing
+// you can see spreading rather than a number in a save file. The tint is
+// inherited and does nothing else: it is a name, not an advantage.
+const C_PLANT_HUE=[C_PLANT, [126,118,62], [62,103,97], [56,82,60]];         // moss, olive, verdigris, pine
+const C_FLOWER_HUE=[C_FLOWER, [196,146,84], [110,120,158], [162,72,74]];    // rose, saffron, woad, madder
+const LUT_HUE=new Uint8Array(256);
+for(let g=0;g<256;g++) LUT_HUE[g]=gtr(g,G_HUE);
+
+let t0=0;
+function render(){
+  t0+=0.06;
+  for (let i=0;i<N;i++){
+    const t=cells[i];
+    const n=noise[i];
+    let c;
+    switch(t){
+      case EMPTY: c=shade(C_PAPER, n*7); break;
+      case STONE: c=shade(C_STONE, n*10); break;
+      case SAND:  c=shade(C_SAND,  n*12); break;
+      case WATER: c=shade(C_WATER, n*8 + Math.sin(t0 + (i%W)*0.3)*6); break;
+      case SEED:  c=shade(C_SEED,  n*8); break;
+      case PLANT: c=shade(C_PLANT_HUE[LUT_HUE[gene[i]]], n*12 - Math.min(30, age[i]/200)); break;
+      case FIRE:  c=R()<0.5?C_FIRE:C_FIRE2; break;
+      case EMBER: c=shade(C_EMBER, n*10); break;
+      case ASH:   c=shade(C_ASH,   n*10); break;
+      case GOLD:  c=(R()<0.02)?C_GOLD2:shade(C_GOLD, n*10); break;
+      case FLOWER:c=shade(C_FLOWER_HUE[LUT_HUE[gene[i]]], n*10); break;
+      case ROOT:  c=shade(C_ROOT,   n*9); break;
+      case TIMBER:c=shade(C_TIMBER, n*16); break;
+      case BRICK: c=shade(C_BRICK, n*9); break;
+      default:    c=C_PAPER;
+    }
+    const p=i*4;
+    px[p]=c[0]; px[p+1]=c[1]; px[p+2]=c[2]; px[p+3]=255;
+  }
+  octx.putImageData(img,0,0);
+  ctx.drawImage(off,0,0,W*SCALE,H*SCALE);
+}
+
+// ---------- input ----------
+let currentEl=SAND, brushSize=2, painting=false;
+const bench=document.getElementById("bench");
+bench.addEventListener("click",e=>{
+  const b=e.target.closest("button[data-el]");
+  if(!b) return;
+  currentEl=+b.dataset.el;
+  bench.querySelectorAll("button[data-el]").forEach(x=>x.classList.toggle("sel",x===b));
+});
+document.getElementById("brush").addEventListener("input",e=>brushSize=+e.target.value);
+
+function paint(cx,cy){
+  const r=brushSize;
+  for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){
+    if(dx*dx+dy*dy>r*r) continue;
+    const x=cx+dx,y=cy+dy;
+    if(!inB(x,y)) continue;
+    const i=idx(x,y);
+    const t=cells[i];
+    if (currentEl===EMPTY){ if(t!==EMPTY){cells[i]=EMPTY;age[i]=0;dirty=true;} continue; }
+    if (currentEl===GOLD){
+      if (t===EMPTY && goldLeft>0){
+        cells[i]=GOLD; goldLeft--; dirty=true;
+        if(!flags.gilt){ flags.gilt=true; log("Something was gilded. It will outlast everything here."); }
+      }
+      continue;
+    }
+    if (currentEl===FIRE){
+      if (t===EMPTY || t===PLANT || t===SEED){ cells[i]=FIRE; age[i]=0; dirty=true; }
+      continue;
+    }
+    if (currentEl===SEED){
+      if (t===EMPTY && R()<P_SEED_SCATTER){ cells[i]=SEED; age[i]=0; gene[i]=sowGene(); dirty=true; }
+      continue;
+    }
+    if ((currentEl===TIMBER || currentEl===BRICK) && t===EMPTY){
+      cells[i]=currentEl; age[i]=0; stalk[i]=0; dirty=true;
+      if(!flags.build){ flags.build=true; log(`The first thing was built by hand in ${region(x)}.`); }
+      continue;
+    }
+    if (t===EMPTY){ cells[i]=currentEl; age[i]=0; dirty=true; }
+  }
+  // pouring water, or digging out from under it, should tell on the next tick
+  // rather than whenever the field happens to come round again
+  invalidateWater();
+  updateGrains();
+}
+function evtCell(e){
+  const rect=cv.getBoundingClientRect();
+  const sx=cv.width/rect.width, sy=cv.height/rect.height;
+  const x=Math.floor((e.clientX-rect.left)*sx/SCALE);
+  const y=Math.floor((e.clientY-rect.top)*sy/SCALE);
+  return [x,y];
+}
+cv.addEventListener("pointerdown",e=>{painting=true;cv.setPointerCapture(e.pointerId);paint(...evtCell(e));});
+cv.addEventListener("pointermove",e=>{if(painting)paint(...evtCell(e));});
+cv.addEventListener("pointerup",()=>painting=false);
+cv.addEventListener("pointercancel",()=>painting=false);
+
+// ---------- controls ----------
+const pauseBtn=document.getElementById("pause");
+pauseBtn.addEventListener("click",()=>{
+  paused=!paused;
+  pauseBtn.textContent=paused?"Resume":"Pause";
+});
+const speedBtn=document.getElementById("speed");
+// x32 exists because inheritance is not watchable at x8: a strain needs tens of
+// in-game days to drift anywhere, which is minutes of real time at the old top
+// speed and under a minute at this one.
+const speeds=[1,3,8,32];
+speedBtn.addEventListener("click",()=>{
+  const k=(speeds.indexOf(speed)+1)%speeds.length;
+  speed=speeds[k];
+  speedBtn.innerHTML=`Time &times;${speed}`;
+});
+document.getElementById("save").addEventListener("click",()=>saveWorld(true));
+
+const grainsEl=document.getElementById("grains");
+const goldbtn=document.getElementById("goldbtn");
+function updateGrains(){
+  grainsEl.textContent = `\u25c8 gold leaf: ${goldLeft} grains`;
+  goldbtn.disabled = goldLeft<=0;
+}
+
+// ---------- status ----------
+const statusEl=document.getElementById("status");
+function updateStatus(){
+  const p=window.__plantCount||0;
+  statusEl.textContent=`Day ${day} · ${p} living things · what you place here stays here`;
+}
+
+// ---------- persistence ----------
+// The world goes into the vault one channel at a time, each run-length encoded.
+// It is nearly all long runs of the same value, so the whole thing stays a few
+// kilobytes even for a grown-in forest.
+function rle(read){
+  const parts=[];
+  let cur=read(0), count=1;
+  for(let i=1;i<N;i++){
+    const v=read(i);
+    if(v===cur && count<9999){count++;}
+    else{parts.push(cur+"x"+count);cur=v;count=1;}
+  }
+  parts.push(cur+"x"+count);
+  return parts.join(",");
+}
+function unrle(s,out){
+  let i=0;
+  for(const part of String(s||"").split(",")){
+    const [t,c]=part.split("x").map(Number);
+    if(!(c>0)||!Number.isFinite(t)) continue;
+    for(let k=0;k<c && i<N;k++) out[i++]=t;
+  }
+  return out;
+}
+const alive=t=>t===PLANT||t===FLOWER||t===SEED||t===ROOT;
+const encodeGrid=()=>rle(i=>cells[i]);
+// Dead cells keep the genome of whatever last lived there, which the simulation
+// never reads but which would wreck the encoding — one run per cell instead of a
+// handful. Zero it on the way out.
+const encodeGene=()=>rle(i=>alive(cells[i])?gene[i]:0);
+// What stalk[] remembers that the grid cannot. Stalk heights come back by
+// measuring each column of green and root wetness re-wets itself from the pool
+// within a few ticks, but two things are invisible in the grid:
+//   1  this timber grew here — without it every reload promoted the world's
+//      stumps to permanent masonry, and they piled up exactly the way
+//      P_HEARTWOOD_ROT exists to stop
+//   2  this root came up through ash — without it every reload turned a whole
+//      generation of roots into sand-makers again, which is the same leak
+//      ROOT_IN_ASH was added to close, just paid once per visit
+const encodeWood=()=>rle(i=>
+  (cells[i]===TIMBER && stalk[i]===HEARTWOOD) ? 1 :
+  (cells[i]===ROOT && (stalk[i]&ROOT_IN_ASH)) ? 2 : 0);
+const decodeGrid=s=>unrle(s,new Uint8Array(N));
+function saveWorld(manual){
+  if(!storageOK) { if(manual) statusEl.textContent="The vault is unreachable — nothing can be preserved."; return; }
+  try{
+    const payload=JSON.stringify({
+      v:3, day, tick, gold:goldLeft, chron, flags,
+      grid:encodeGrid(), gene:encodeGene(), wood:encodeWood()
+    });
+    localStorage.setItem(SAVE_KEY,payload);
+    if(manual){ statusEl.textContent=`Day ${day} · the world was preserved.`; }
+    dirty=false;
+  }catch(err){
+    // most likely QuotaExceededError, or a browser that blocks writes outright
+    console.error("save failed",err);
+    if(manual) statusEl.textContent="Preservation failed — the vault refused.";
+  }
+}
+function loadWorld(){
+  let raw;
+  try{
+    raw=localStorage.getItem(SAVE_KEY);
+  }catch(err){
+    // reading can throw where storage is blocked entirely (private modes, hardened settings)
+    storageOK=false;
+    return false;
+  }
+  if(!raw) return false; // nothing preserved yet — a fresh world, not an error
+  try{
+    const s=JSON.parse(raw);
+    // build into locals first, so a malformed save can't leave a half-restored world
+    const grid=decodeGrid(s.grid);
+    const ages=new Uint16Array(N);
+    for(let i=0;i<N;i++) if(grid[i]===PLANT||grid[i]===FLOWER) ages[i]=1000+Math.floor(Math.random()*1500);
+    // The genome channel arrived with v3. Anything older is read by what it does
+    // not have rather than by its version number: growth in a v1 or v2 world is
+    // wild type by definition — it is the only plant those worlds ever had — and
+    // the wild tint is the moss green they were drawn in, so an old world comes
+    // back looking exactly as it was left.
+    const genes=new Uint8Array(N);
+    if (s.gene) unrle(s.gene, genes);
+    else for(let i=0;i<N;i++) if(alive(grid[i])) genes[i]=WILD_GENE;
+    // stalk heights are derivable from the grid, so they are not saved; rebuild
+    // them by measuring each column upward from its base
+    const stalks=new Uint8Array(N);
+    for(let x=0;x<W;x++){
+      let run=0;
+      for(let y=H-1;y>=0;y--){
+        const j=y*W+x;
+        if(grid[j]===PLANT||grid[j]===FLOWER){ run=Math.min(run+1,MAX_STALK); stalks[j]=run; }
+        else run=0;
+      }
+    }
+    // ...except what grew where, which does not survive the round trip unaided.
+    // Saves without the channel leave heartwood as built timber and roots with
+    // no memory of the ash they came up through, which is what every save before
+    // v3 did anyway.
+    if (s.wood){
+      const wood=unrle(s.wood,new Uint8Array(N));
+      for(let i=0;i<N;i++){
+        if(wood[i]===1 && grid[i]===TIMBER) stalks[i]=HEARTWOOD;
+        else if(wood[i]===2 && grid[i]===ROOT) stalks[i]=ROOT_IN_ASH; // wetness 0, re-wets next tick
+      }
+    }
+    cells=grid; age=ages; stalk=stalks; gene=genes; invalidateWater();
+    day=s.day||1; tick=s.tick||0; goldLeft=(typeof s.gold==="number")?s.gold:GOLD_BUDGET;
+    chron=s.chron||[]; flags=Object.assign(flags, s.flags||{});
+    dayMilestones=dayMilestones.filter(m=>m>day);
+    renderChron();
+    log("The world was opened again. It had not forgotten.");
+    return true;
+  }catch(err){
+    // an unreadable save should cost the visitor a world, not the whole piece
+    console.error("the vault held something unreadable",err);
+    return false;
+  }
+}
+
+// ---------- boot ----------
+(function boot(){
+  // probe for a writable localStorage: it exists but throws on write in some
+  // private-browsing modes, so presence alone is not proof it works
+  try{
+    const probe=SAVE_KEY+"-probe";
+    localStorage.setItem(probe,"1");
+    localStorage.removeItem(probe);
+  }catch(err){
+    storageOK=false;
+  }
+  let loaded=false;
+  if (storageOK) loaded=loadWorld();
+  if(!storageOK) document.getElementById("vaultnote").style.display="block";
+  if(!loaded) genesis();
+  updateGrains();
+
+  let statusTimer=0;
+  function loop(){
+    if(!paused){ for(let k=0;k<speed;k++) step(); }
+    render();
+    if(++statusTimer>=20){ statusTimer=0; updateStatus(); }
+    requestAnimationFrame(loop);
+  }
+  loop();
+
+  setInterval(()=>{ if(dirty && !paused) saveWorld(false); }, 20000);
+  document.addEventListener("visibilitychange",()=>{ if(document.hidden) saveWorld(false); });
+})();
+
+})();
+</script>
+</body>
+</html>

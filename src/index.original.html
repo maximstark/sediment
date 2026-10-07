@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEDIMENT — a small world that remembers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --vellum:#e9dfc6;
+    --vellum-deep:#ddd0b2;
+    --ink:#221b12;
+    --ink-faded:#5a4f3d;
+    --gold:#b8941f;
+    --rule:#3a3226;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--vellum-deep);
+    color:var(--ink);
+    font-family:'IM Fell English', Georgia, 'Times New Roman', serif;
+    display:flex;align-items:center;justify-content:center;
+    padding:14px;
+  }
+  .folio{
+    background:var(--vellum);
+    border:1px solid var(--rule);
+    outline:3px double var(--rule);
+    outline-offset:4px;
+    padding:18px 20px 16px;
+    max-width:980px;width:100%;
+    box-shadow:0 2px 14px rgba(34,27,18,.25);
+  }
+  header{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid var(--rule);padding-bottom:8px;margin-bottom:12px}
+  h1{font-size:30px;letter-spacing:.35em;font-weight:normal}
+  h1 .g{color:var(--gold)}
+  .motto{font-style:italic;color:var(--ink-faded);font-size:14px}
+  .body{display:flex;gap:16px}
+  .stage{flex:0 0 auto}
+  canvas{
+    display:block;
+    border:1px solid var(--rule);
+    image-rendering:pixelated;
+    cursor:crosshair;
+    touch-action:none;
+    max-width:100%;
+  }
+  .status{font-size:13px;color:var(--ink-faded);margin-top:6px;font-style:italic;min-height:18px}
+  .chronicle{
+    flex:1 1 auto;min-width:200px;max-width:280px;
+    border-left:1px solid var(--rule);
+    padding-left:14px;
+    display:flex;flex-direction:column;
+  }
+  .chronicle h2{
+    font-size:13px;letter-spacing:.3em;font-weight:normal;
+    border-bottom:1px solid var(--rule);padding-bottom:5px;margin-bottom:8px;
+  }
+  #chron{
+    overflow-y:auto;max-height:400px;
+    font-size:13.5px;line-height:1.5;
+  }
+  #chron p{margin-bottom:9px}
+  #chron .d{font-variant:small-caps;letter-spacing:.05em}
+  #chron .m{font-style:italic;color:var(--ink-faded)}
+  #chron p:first-child .m{color:var(--ink)}
+  .bench{
+    margin-top:12px;border-top:2px solid var(--rule);padding-top:10px;
+    display:flex;flex-wrap:wrap;gap:6px;align-items:center;
+  }
+  button{
+    font-family:inherit;font-size:13px;letter-spacing:.08em;
+    background:transparent;color:var(--ink);
+    border:1px solid var(--rule);
+    padding:5px 11px;cursor:pointer;
+  }
+  button:hover{background:rgba(34,27,18,.07)}
+  button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  button.sel{background:var(--ink);color:var(--vellum)}
+  button.sel.goldbtn{background:var(--gold);color:var(--ink);border-color:var(--gold)}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  .spacer{flex:1}
+  .grains{font-size:13px;color:var(--gold);font-style:italic;white-space:nowrap}
+  .small{font-size:12px;color:var(--ink-faded)}
+  label{font-size:12px;color:var(--ink-faded);letter-spacing:.05em}
+  input[type=range]{width:70px;accent-color:var(--ink);vertical-align:middle}
+  .vaultnote{font-size:12px;color:#8a3b22;font-style:italic;margin-top:4px;display:none}
+  @media (max-width:820px){
+    .body{flex-direction:column}
+    .chronicle{border-left:none;border-top:1px solid var(--rule);padding-left:0;padding-top:10px;max-width:none}
+    #chron{max-height:180px}
+  }
+  @media (prefers-reduced-motion:reduce){ /* sim speed unaffected; no decorative motion exists */ }
+</style>
+</head>
+<body>
+<div class="folio">
+  <header>
+    <h1>SEDI<span class="g">M</span>ENT</h1>
+    <div class="motto">everything settles &middot; little survives &middot; gold endures</div>
+  </header>
+
+  <div class="body">
+    <div class="stage">
+      <canvas id="c" width="640" height="400" aria-label="A small simulated world of sand, water, plants, fire and gold"></canvas>
+      <div class="status" id="status">the world is waking&hellip;</div>
+      <div class="vaultnote" id="vaultnote">The vault is unreachable — this world will live only until the page closes.</div>
+    </div>
+    <aside class="chronicle">
+      <h2>CHRONICLE</h2>
+      <div id="chron" aria-live="polite"></div>
+    </aside>
+  </div>
+
+  <div class="bench" id="bench">
+    <button data-el="2" class="sel">Sand</button>
+    <button data-el="3">Water</button>
+    <button data-el="4">Seed</button>
+    <button data-el="6">Fire</button>
+    <button data-el="1">Stone</button>
+    <button data-el="10">Timber</button>
+    <button data-el="11">Brick</button>
+    <button data-el="9" class="goldbtn" id="goldbtn">Gold&nbsp;Leaf</button>
+    <button data-el="0">Erase</button>
+    <label>brush <input type="range" id="brush" min="1" max="6" value="2"></label>
+    <div class="spacer"></div>
+    <span class="grains" id="grains"></span>
+    <button id="pause">Pause</button>
+    <button id="speed">Time &times;1</button>
+    <button id="save">Preserve</button>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+// ---------- constants ----------
+const W = 160, H = 100, SCALE = 4;
+const EMPTY=0, STONE=1, SAND=2, WATER=3, SEED=4, PLANT=5, FIRE=6, EMBER=7, ASH=8, GOLD=9, TIMBER=10, BRICK=11;
+const GOLD_BUDGET = 400;
+const TICKS_PER_DAY = 900;
+const SAVE_KEY = "sediment-world-v1";
+
+// ---------- state ----------
+const N = W*H;
+let cells = new Uint8Array(N);
+let age   = new Uint16Array(N);
+let stamp = new Int32Array(N);
+const noise = new Float32Array(N);
+for (let i=0;i<N;i++) noise[i] = Math.random()*2-1;
+
+let frame=0, tick=0, day=1, goldLeft=GOLD_BUDGET;
+let paused=false, speed=1;
+let chron=[]; // [{d, m}] newest first
+let flags={sprout:false, fire:false, gilt:false, erode:false, tall:false, bigfire:false, build:false, great:false, burnbuild:false};
+let bigFireBurning=false;
+let dayMilestones=[10,25,50,100,200,365];
+let storageOK=true, dirty=false;
+
+const idx=(x,y)=>y*W+x;
+const inB=(x,y)=>x>=0&&x<W&&y>=0&&y<H;
+const R=Math.random;
+
+// ---------- regions ----------
+function region(x){
+  if (x < W/3) return "the west";
+  if (x < 2*W/3) return "the heartlands";
+  return "the east";
+}
+
+// ---------- chronicle ----------
+const chronEl=document.getElementById("chron");
+function log(msg){
+  chron.unshift({d:day, m:msg});
+  if (chron.length>200) chron.length=200;
+  renderChron();
+  dirty=true;
+}
+function renderChron(){
+  chronEl.innerHTML = chron.map(e=>
+    `<p><span class="d">Day ${e.d}</span> — <span class="m">${e.m}</span></p>`).join("");
+}
+
+// ---------- world genesis ----------
+function genesis(){
+  cells.fill(EMPTY); age.fill(0);
+  // stone bedrock with an uneven brow
+  for (let x=0;x<W;x++){
+    const g = H-9 + Math.round(3*Math.sin(x/11) + 2*Math.sin(x/29+2) + noise[x]*1.2);
+    for (let y=g;y<H;y++) cells[idx(x,y)]=STONE;
+    // a dusting of sand atop the stone
+    const sd = 2 + Math.round(1.5+1.5*Math.sin(x/7+1));
+    for (let y=g-sd;y<g;y++) if(y>0) cells[idx(x,y)]=SAND;
+  }
+  // carve a pond in the east
+  for (let x=104;x<134;x++){
+    const depth = Math.round(5*Math.sin((x-104)/30*Math.PI));
+    for (let d=0; d<depth; d++){
+      // find surface then dig
+      for (let y=0;y<H;y++){
+        const i=idx(x,y);
+        if (cells[i]!==EMPTY){ cells[i]=EMPTY; break; }
+      }
+    }
+  }
+  // flood a horizontal band where empty, within the bowl
+  for (let x=106;x<132;x++){
+    for (let y=H-16;y<H-8;y++){
+      const i=idx(x,y);
+      if (cells[i]===EMPTY) cells[i]=WATER;
+    }
+  }
+  day=1; tick=0; goldLeft=GOLD_BUDGET;
+  chron=[]; flags={sprout:false,fire:false,gilt:false,erode:false,tall:false,bigfire:false,build:false,great:false,burnbuild:false};
+  log("In the beginning: stone, sand, still water, and light.");
+}
+
+// ---------- simulation ----------
+function waterNear(x,y,r){
+  for (let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){
+    const nx=x+dx, ny=y+dy;
+    if (inB(nx,ny) && cells[idx(nx,ny)]===WATER) return true;
+  }
+  return false;
+}
+function solid(t){
+  return t===STONE||t===SAND||t===TIMBER||t===BRICK||t===GOLD;
+}
+function plantHeight(x,y){
+  let h=0, yy=y;
+  while (yy<H && cells[idx(x,yy)]===PLANT && h<40){ h++; yy++; }
+  return h;
+}
+function set(i,t,a){ cells[i]=t; age[i]=a||0; stamp[i]=frame; }
+
+function step(){
+  frame++; tick++;
+  if (tick % TICKS_PER_DAY === 0){
+    day++;
+    const m = dayMilestones[0];
+    if (m && day>=m){ dayMilestones.shift(); log(`The world entered its ${day}th day.`); }
+  }
+  let fireCount=0, plantCount=0, builtCount=0;
+  const ltr = (frame & 1) === 0;
+
+  for (let y=H-1; y>=0; y--){
+    for (let xi=0; xi<W; xi++){
+      const x = ltr ? xi : W-1-xi;
+      const i = idx(x,y);
+      if (stamp[i]===frame) continue;
+      const t = cells[i];
+      if (t===EMPTY || t===GOLD) continue;
+
+      switch(t){
+
+        case SAND: {
+          const b=idx(x,y+1);
+          if (y+1<H){
+            const bt=cells[b];
+            if (bt===EMPTY){ set(b,SAND); set(i,EMPTY); break; }
+            if (bt===WATER && R()<0.6){ cells[b]=SAND; cells[i]=WATER; stamp[b]=frame; break; }
+            const dir = R()<0.5?-1:1;
+            for (const dx of [dir,-dir]){
+              const nx=x+dx;
+              if (inB(nx,y+1) && cells[idx(nx,y+1)]===EMPTY && cells[idx(nx,y)]===EMPTY){
+                set(idx(nx,y+1),SAND); set(i,EMPTY); break;
+              }
+            }
+          }
+          break;
+        }
+
+        case ASH: {
+          if (R()<0.55 && y+1<H){
+            const b=idx(x,y+1), bt=cells[b];
+            if (bt===EMPTY){ set(b,ASH); set(i,EMPTY); break; }
+            if (bt===WATER && R()<0.2){ cells[b]=ASH; cells[i]=WATER; stamp[b]=frame; break; }
+            const dir=R()<0.5?-1:1, nx=x+dir;
+            if (inB(nx,y+1) && cells[idx(nx,y+1)]===EMPTY && cells[idx(nx,y)]===EMPTY){
+              set(idx(nx,y+1),ASH); set(i,EMPTY);
+            }
+          }
+          break;
+        }
+
+        case WATER: {
+          if (y+1<H && cells[idx(x,y+1)]===EMPTY){ set(idx(x,y+1),WATER); set(i,EMPTY); break; }
+          let moved=false;
+          const dir=R()<0.5?-1:1;
+          for (const dx of [dir,-dir]){
+            const nx=x+dx;
+            if (inB(nx,y+1) && cells[idx(nx,y+1)]===EMPTY){
+              set(idx(nx,y+1),WATER); set(i,EMPTY); moved=true; break;
+            }
+          }
+          if (moved) break;
+          for (const dx of [dir,-dir]){
+            const nx=x+dx;
+            if (inB(nx,y) && cells[idx(nx,y)]===EMPTY){
+              set(idx(nx,y),WATER); set(i,EMPTY); moved=true; break;
+            }
+          }
+          break;
+        }
+
+        case SEED: {
+          if (y+1<H && cells[idx(x,y+1)]===EMPTY){ set(idx(x,y+1),SEED,age[i]); set(i,EMPTY); break; }
+          if (y+1<H && cells[idx(x,y+1)]===WATER && R()<0.4){ // sink through water
+            cells[idx(x,y+1)]=SEED; age[idx(x,y+1)]=age[i]; cells[i]=WATER; age[i]=0; stamp[idx(x,y+1)]=frame; break;
+          }
+          age[i]++;
+          const below = y+1<H ? cells[idx(x,y+1)] : STONE;
+          if ((below===SAND||below===ASH) && waterNear(x,y,3) && R()<0.03){
+            set(i,PLANT,0);
+            if (!flags.sprout){ flags.sprout=true; log(`The first green thing took root in ${region(x)}.`); }
+            break;
+          }
+          if (age[i]>1800 && R()<0.01){ set(i,EMPTY); } // seeds are not forever
+          break;
+        }
+
+        case PLANT: {
+          plantCount++;
+          age[i]++;
+          // grow upward
+          if (y>0 && cells[idx(x,y-1)]===EMPTY && R()<0.02){
+            // measure height from the base of this stalk
+            let base=y; while (base+1<H && cells[idx(x,base+1)]===PLANT) base++;
+            const height = base - y + 1;
+            if (height < 24){
+              set(idx(x,y-1),PLANT,0);
+              if (!flags.tall && height+1>=18){ flags.tall=true; log(`A great growth in ${region(x)} reached toward the sky.`); }
+            }
+          }
+          // branch
+          if (R()<0.0025){
+            const dx=R()<0.5?-1:1, nx=x+dx;
+            if (inB(nx,y) && cells[idx(nx,y)]===EMPTY) set(idx(nx,y),PLANT, age[i]);
+          }
+          // wither with age
+          if (age[i] > 4500 + noise[i]*1500 && R()<0.002){ set(i,ASH); }
+          break;
+        }
+
+        case FIRE: {
+          fireCount++;
+          // water quenches
+          let doused=false;
+          for (const [dx,dy] of [[0,1],[0,-1],[1,0],[-1,0]]){
+            const nx=x+dx, ny=y+dy;
+            if (inB(nx,ny) && cells[idx(nx,ny)]===WATER){ set(i,EMPTY); doused=true; break; }
+          }
+          if (doused) break;
+          // spread to plants and timber
+          for (const [dx,dy] of [[0,1],[0,-1],[1,0],[-1,0]]){
+            const nx=x+dx, ny=y+dy;
+            if (!inB(nx,ny)) continue;
+            const nb=cells[idx(nx,ny)];
+            if (nb===PLANT && R()<0.28){
+              set(idx(nx,ny),FIRE,0);
+              if (!flags.fire){ flags.fire=true; log(`Fire was set loose in ${region(nx)}.`); }
+            } else if (nb===TIMBER && R()<0.06){
+              set(idx(nx,ny),FIRE,0);
+              if (!flags.burnbuild){ flags.burnbuild=true; log("Fire found the timber. What was built began to burn."); }
+            }
+          }
+          // flame licks upward
+          if (y>0 && cells[idx(x,y-1)]===EMPTY && R()<0.10){ set(idx(x,y-1),FIRE, 26); }
+          age[i]++;
+          if (age[i] > 30 + noise[i]*10){ set(i,EMBER,0); }
+          break;
+        }
+
+        case EMBER: {
+          age[i]++;
+          if (age[i]>45){ set(i, R()<0.55 ? ASH : EMPTY); }
+          break;
+        }
+
+        case TIMBER:
+        case BRICK: {
+          builtCount++;
+          // slow decay beside water: timber rots, brick weathers
+          if (R()<(t===TIMBER?0.00012:0.00004)){
+            for (const [dx,dy] of [[0,1],[0,-1],[1,0],[-1,0]]){
+              const nx=x+dx, ny=y+dy;
+              if (inB(nx,ny) && cells[idx(nx,ny)]===WATER){
+                set(i, t===TIMBER ? ASH : SAND);
+                break;
+              }
+            }
+            if (cells[i]!==t) break;
+          }
+          // support: holds if resting on something, or anchored to a solid neighbor (allows lintels and spans)
+          const below = y+1<H ? cells[idx(x,y+1)] : STONE;
+          if (below===EMPTY || below===WATER){
+            const ls = x>0   && solid(cells[idx(x-1,y)]);
+            const rs = x<W-1 && solid(cells[idx(x+1,y)]);
+            if (!ls && !rs){
+              if (below===EMPTY){ set(idx(x,y+1),t); set(i,EMPTY); }
+              else { cells[idx(x,y+1)]=t; cells[i]=WATER; stamp[idx(x,y+1)]=frame; }
+            }
+          }
+          break;
+        }
+
+        case STONE: {
+          // slow erosion beside water — the world's memento mori
+          if (R()<0.00006){
+            for (const [dx,dy] of [[0,1],[0,-1],[1,0],[-1,0]]){
+              const nx=x+dx, ny=y+dy;
+              if (inB(nx,ny) && cells[idx(nx,ny)]===WATER){
+                set(i,SAND);
+                if (!flags.erode){ flags.erode=true; log("Water wore the first stone to sand. Nothing ungilded is safe."); }
+                break;
+              }
+            }
+          }
+          break;
+        }
+      }
+    }
+  }
+
+  // great-burning bookkeeping
+  if (fireCount>60 && !bigFireBurning){
+    bigFireBurning=true;
+    log("A great burning swept the world.");
+  }
+  if (bigFireBurning && fireCount===0){
+    bigFireBurning=false;
+    log("The burning ended. Ash settled over everything.");
+  }
+  if (!flags.great && builtCount>=150){
+    flags.great=true;
+    log("A great work now stands in the world.");
+  }
+  window.__plantCount = plantCount;
+}
+
+// ---------- rendering ----------
+const cv=document.getElementById("c");
+const ctx=cv.getContext("2d");
+ctx.imageSmoothingEnabled=false;
+const off=document.createElement("canvas"); off.width=W; off.height=H;
+const octx=off.getContext("2d");
+const img=octx.createImageData(W,H);
+const px=img.data;
+
+function shade(base, amt){ // base [r,g,b], amt -1..1
+  return [
+    Math.max(0,Math.min(255, base[0]+amt)),
+    Math.max(0,Math.min(255, base[1]+amt)),
+    Math.max(0,Math.min(255, base[2]+amt)),
+  ];
+}
+const C_PAPER=[233,223,198], C_STONE=[69,64,58], C_SAND=[209,188,146],
+      C_WATER=[111,142,168], C_SEED=[109,81,54], C_PLANT=[92,111,76],
+      C_FIRE=[192,86,44], C_FIRE2=[224,142,58], C_EMBER=[138,59,34],
+      C_ASH=[167,157,144], C_GOLD=[201,162,39], C_GOLD2=[232,200,90],
+      C_TIMBER=[121,88,54], C_BRICK=[143,80,60];
+
+let t0=0;
+function render(){
+  t0+=0.06;
+  for (let i=0;i<N;i++){
+    const t=cells[i];
+    const n=noise[i];
+    let c;
+    switch(t){
+      case EMPTY: c=shade(C_PAPER, n*7); break;
+      case STONE: c=shade(C_STONE, n*10); break;
+      case SAND:  c=shade(C_SAND,  n*12); break;
+      case WATER: c=shade(C_WATER, n*8 + Math.sin(t0 + (i%W)*0.3)*6); break;
+      case SEED:  c=shade(C_SEED,  n*8); break;
+      case PLANT: c=shade(C_PLANT, n*12 - Math.min(30, age[i]/200)); break;
+      case FIRE:  c=R()<0.5?C_FIRE:C_FIRE2; break;
+      case EMBER: c=shade(C_EMBER, n*10); break;
+      case ASH:   c=shade(C_ASH,   n*10); break;
+      case GOLD:  c=(R()<0.02)?C_GOLD2:shade(C_GOLD, n*10); break;
+      case TIMBER:c=shade(C_TIMBER, n*16); break;
+      case BRICK: c=shade(C_BRICK, n*9); break;
+      default:    c=C_PAPER;
+    }
+    const p=i*4;
+    px[p]=c[0]; px[p+1]=c[1]; px[p+2]=c[2]; px[p+3]=255;
+  }
+  octx.putImageData(img,0,0);
+  ctx.drawImage(off,0,0,W*SCALE,H*SCALE);
+}
+
+// ---------- input ----------
+let currentEl=SAND, brushSize=2, painting=false;
+const bench=document.getElementById("bench");
+bench.addEventListener("click",e=>{
+  const b=e.target.closest("button[data-el]");
+  if(!b) return;
+  currentEl=+b.dataset.el;
+  bench.querySelectorAll("button[data-el]").forEach(x=>x.classList.toggle("sel",x===b));
+});
+document.getElementById("brush").addEventListener("input",e=>brushSize=+e.target.value);
+
+function paint(cx,cy){
+  const r=brushSize;
+  for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){
+    if(dx*dx+dy*dy>r*r) continue;
+    const x=cx+dx,y=cy+dy;
+    if(!inB(x,y)) continue;
+    const i=idx(x,y);
+    const t=cells[i];
+    if (currentEl===EMPTY){ if(t!==EMPTY){cells[i]=EMPTY;age[i]=0;dirty=true;} continue; }
+    if (currentEl===GOLD){
+      if (t===EMPTY && goldLeft>0){
+        cells[i]=GOLD; goldLeft--; dirty=true;
+        if(!flags.gilt){ flags.gilt=true; log("Something was gilded. It will outlast everything here."); }
+      }
+      continue;
+    }
+    if (currentEl===FIRE){
+      if (t===EMPTY || t===PLANT || t===SEED){ cells[i]=FIRE; age[i]=0; dirty=true; }
+      continue;
+    }
+    if (currentEl===SEED){
+      if (t===EMPTY && R()<0.3){ cells[i]=SEED; age[i]=0; dirty=true; }
+      continue;
+    }
+    if ((currentEl===TIMBER || currentEl===BRICK) && t===EMPTY){
+      cells[i]=currentEl; age[i]=0; dirty=true;
+      if(!flags.build){ flags.build=true; log(`The first thing was built by hand in ${region(x)}.`); }
+      continue;
+    }
+    if (t===EMPTY){ cells[i]=currentEl; age[i]=0; dirty=true; }
+  }
+  updateGrains();
+}
+function evtCell(e){
+  const rect=cv.getBoundingClientRect();
+  const sx=cv.width/rect.width, sy=cv.height/rect.height;
+  const x=Math.floor((e.clientX-rect.left)*sx/SCALE);
+  const y=Math.floor((e.clientY-rect.top)*sy/SCALE);
+  return [x,y];
+}
+cv.addEventListener("pointerdown",e=>{painting=true;cv.setPointerCapture(e.pointerId);paint(...evtCell(e));});
+cv.addEventListener("pointermove",e=>{if(painting)paint(...evtCell(e));});
+cv.addEventListener("pointerup",()=>painting=false);
+cv.addEventListener("pointercancel",()=>painting=false);
+
+// ---------- controls ----------
+const pauseBtn=document.getElementById("pause");
+pauseBtn.addEventListener("click",()=>{
+  paused=!paused;
+  pauseBtn.textContent=paused?"Resume":"Pause";
+});
+const speedBtn=document.getElementById("speed");
+const speeds=[1,3,8];
+speedBtn.addEventListener("click",()=>{
+  const k=(speeds.indexOf(speed)+1)%speeds.length;
+  speed=speeds[k];
+  speedBtn.innerHTML=`Time &times;${speed}`;
+});
+document.getElementById("save").addEventListener("click",()=>saveWorld(true));
+
+const grainsEl=document.getElementById("grains");
+const goldbtn=document.getElementById("goldbtn");
+function updateGrains(){
+  grainsEl.textContent = `\u25c8 gold leaf: ${goldLeft} grains`;
+  goldbtn.disabled = goldLeft<=0;
+}
+
+// ---------- status ----------
+const statusEl=document.getElementById("status");
+function updateStatus(){
+  const p=window.__plantCount||0;
+  statusEl.textContent=`Day ${day} · ${p} living things · what you place here stays here`;
+}
+
+// ---------- persistence ----------
+function encodeGrid(){
+  const parts=[];
+  let cur=cells[0], count=1;
+  for(let i=1;i<N;i++){
+    if(cells[i]===cur && count<9999){count++;}
+    else{parts.push(cur+"x"+count);cur=cells[i];count=1;}
+  }
+  parts.push(cur+"x"+count);
+  return parts.join(",");
+}
+function decodeGrid(s){
+  const out=new Uint8Array(N);
+  let i=0;
+  for(const part of s.split(",")){
+    const [t,c]=part.split("x").map(Number);
+    for(let k=0;k<c && i<N;k++) out[i++]=t;
+  }
+  return out;
+}
+async function saveWorld(manual){
+  if(!storageOK) { if(manual) statusEl.textContent="The vault is unreachable — nothing can be preserved."; return; }
+  try{
+    const payload=JSON.stringify({
+      v:1, day, tick, gold:goldLeft, chron, flags,
+      grid:encodeGrid()
+    });
+    const res=await window.storage.set(SAVE_KEY,payload);
+    if(res && manual){ statusEl.textContent=`Day ${day} · the world was preserved.`; }
+    dirty=false;
+  }catch(err){
+    console.error("save failed",err);
+    if(manual) statusEl.textContent="Preservation failed — the vault refused.";
+  }
+}
+async function loadWorld(){
+  try{
+    const res=await window.storage.get(SAVE_KEY);
+    if(res && res.value){
+      const s=JSON.parse(res.value);
+      cells=decodeGrid(s.grid);
+      age=new Uint16Array(N);
+      for(let i=0;i<N;i++) if(cells[i]===PLANT) age[i]=1000+Math.floor(Math.random()*1500);
+      day=s.day||1; tick=s.tick||0; goldLeft=(typeof s.gold==="number")?s.gold:GOLD_BUDGET;
+      chron=s.chron||[]; flags=Object.assign(flags, s.flags||{});
+      dayMilestones=dayMilestones.filter(m=>m>day);
+      renderChron();
+      log("The world was opened again. It had not forgotten.");
+      return true;
+    }
+  }catch(err){
+    // get() throws when the key doesn't exist — that's a fresh world, not an error
+    if (typeof window.storage==="undefined"){ storageOK=false; }
+  }
+  if (typeof window.storage==="undefined"){ storageOK=false; }
+  return false;
+}
+
+// ---------- boot ----------
+(async function boot(){
+  let loaded=false;
+  if (typeof window.storage!=="undefined"){
+    loaded=await loadWorld();
+  } else {
+    storageOK=false;
+  }
+  if(!storageOK) document.getElementById("vaultnote").style.display="block";
+  if(!loaded) genesis();
+  updateGrains();
+
+  let statusTimer=0;
+  function loop(){
+    if(!paused){ for(let k=0;k<speed;k++) step(); }
+    render();
+    if(++statusTimer>=20){ statusTimer=0; updateStatus(); }
+    requestAnimationFrame(loop);
+  }
+  loop();
+
+  setInterval(()=>{ if(dirty && !paused) saveWorld(false); }, 20000);
+  document.addEventListener("visibilitychange",()=>{ if(document.hidden) saveWorld(false); });
+})();
+
+})();
+</script>
+</body>
+</html>
