@@ -1,6 +1,6 @@
 # SEDIMENT
 
-**Live at [demo.temperaturezero.com/sediment](https://demo.temperaturezero.com/sediment/)**
+**Live at [maximstark.art/sediment](https://maximstark.art/sediment/)**
 
 A small falling-sand world that remembers what you do to it. Sand slumps, water
 finds its level, stone wears away where the pond touches it, and fire takes
@@ -186,7 +186,7 @@ npm i playwright && npx playwright install chromium   # once, for qa/
 
 node qa/harness.mjs                 # behaviour checks (pass words to filter: water fire)
 node qa/e2e.mjs                     # end-to-end against the local build
-SEDIMENT_URL=https://demo.temperaturezero.com/sediment node qa/e2e.mjs   # ...or the live site
+SEDIMENT_URL=https://maximstark.art/sediment node qa/e2e.mjs   # ...or the live site
 node qa/probe.mjs                   # contact sheet: --days, --frames, --out, --genesis
 ```
 

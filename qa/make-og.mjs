@@ -111,7 +111,7 @@ const dataUrl = await page.evaluate(async () => {
 
   g.textAlign = "right";
   g.font = "italic 23px 'IM Fell English', Georgia, serif";
-  g.fillText("temperaturezero.com", W - 56, H - band + 95);
+  g.fillText("maximstark.art", W - 56, H - band + 95);
   g.font = "26px 'IM Fell English', Georgia, serif";
   g.fillStyle = "#221b12";
   g.fillText("a small world that remembers", W - 56, H - band + 60);

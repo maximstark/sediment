@@ -35,7 +35,7 @@ const server = createServer((req, res) => {
     res.end(body);
   } catch { res.writeHead(404).end("not found"); }
 });
-// SEDIMENT_URL=https://demo.temperaturezero.com/sediment runs the same checks
+// SEDIMENT_URL=https://maximstark.art/sediment runs the same checks
 // against the live deploy instead of the local build
 const LIVE = process.env.SEDIMENT_URL?.replace(/\/$/, "");
 if (!LIVE) await new Promise((r) => server.listen(0, "127.0.0.1", r));
@@ -92,8 +92,8 @@ const isStone = ([r, g, b]) => r < 95 && g < 90 && b < 85;
   assert(meta.desc && meta.desc.length > 30, "meta description present", meta.desc);
   assert(meta.ogTitle && meta.ogDesc, "og:title and og:description present");
   assert(meta.icon?.startsWith("data:image/svg+xml"), "favicon is an inline SVG data URI");
-  assert(/Maxim Starkweather/.test(meta.footer) && /temperaturezero\.com/.test(meta.footer), "footer attribution present", meta.footer);
-  assert(meta.footerHref === "https://temperaturezero.com/", "footer links to temperaturezero.com", meta.footerHref);
+  assert(/Maxim Starkweather/.test(meta.footer) && /maximstark\.art/.test(meta.footer), "footer attribution present", meta.footer);
+  assert(meta.footerHref === "https://maximstark.art/", "footer links to maximstark.art", meta.footerHref);
   assert(!meta.googleFonts, "no Google Fonts request — the face is self-hosted");
 
   const fontOK = await page.evaluate(async () => {
